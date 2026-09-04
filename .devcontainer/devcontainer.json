@@ -2,7 +2,9 @@
   "name": "KataCraft",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:4": {}
+    "ghcr.io/devcontainers/features/docker-in-docker:4": {
+      "moby": false
+    }
   },
   "forwardPorts": [3000, 5173],
   "portsAttributes": {
