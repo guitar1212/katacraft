@@ -16,5 +16,12 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Bind all interfaces, not just localhost — required for the dev
+    // server to be reachable through GitHub Codespaces' / any container's
+    // port-forwarding proxy, which connects from outside the loopback
+    // interface. Without this you get a 502 from the forwarded URL even
+    // though `npm run dev` looks like it started fine.
+    host: true,
+    strictPort: true,
   },
 });
