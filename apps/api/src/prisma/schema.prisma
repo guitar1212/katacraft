@@ -1,0 +1,250 @@
+generator client {
+  provider               = "prisma-client"
+  output                 = "../generated/prisma"
+  moduleFormat           = "cjs"
+  generatedFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  MEMBER
+  DESIGNER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum ModelKind {
+  MODEL
+  PRINTABLE
+}
+
+enum ModelStatus {
+  DRAFT
+  PUBLISHED
+  UNPUBLISHED
+}
+
+enum RenderPurpose {
+  PREVIEW
+  FINAL
+}
+
+enum RenderStatus {
+  QUEUED
+  PROCESSING
+  DONE
+  FAILED
+}
+
+enum DownloadMethod {
+  DOWNLOAD
+  COMPANION_IMPORT
+}
+
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  passwordHash  String?
+  googleId      String?    @unique
+  name          String
+  role          Role       @default(MEMBER)
+  status        UserStatus @default(ACTIVE)
+  creditsBalance Int       @default(0)
+  language      String     @default("zh-TW")
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  creditLedger   CreditLedger[]
+  refreshTokens  RefreshToken[]
+  favorites      Favorite[]
+  renderJobs     RenderJob[]
+  downloads      Download[]
+  createdModels  Model[]        @relation("ModelCreatedBy")
+  createdVersions ModelVersion[] @relation("VersionCreatedBy")
+  auditLogs      AuditLog[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String
+  revoked   Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model CreditLedger {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  delta         Int
+  reason        String
+  refType       String?
+  refId         String?
+  balanceAfter  Int
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  sortOrder Int      @default(0)
+  models    Model[]
+}
+
+model Model {
+  id              String       @id @default(uuid())
+  slug            String       @unique
+  name            String
+  description     String       @default("")
+  kind            ModelKind    @default(MODEL)
+  status          ModelStatus  @default(DRAFT)
+  categoryId      String?
+  category        Category?    @relation(fields: [categoryId], references: [id])
+  thumbnailUrl    String?
+  creditCost      Int          @default(1)
+  featured        Boolean      @default(false)
+  downloadCount   Int          @default(0)
+  favoriteCount   Int          @default(0)
+  currentVersionId String?     @unique
+  currentVersion  ModelVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  createdById     String
+  createdBy       User         @relation("ModelCreatedBy", fields: [createdById], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  versions        ModelVersion[] @relation("ModelVersions")
+  printableFiles  PrintableFile[]
+  favorites       Favorite[]
+  renderJobs      RenderJob[]
+  downloads       Download[]
+}
+
+model ModelVersion {
+  id             String   @id @default(uuid())
+  modelId        String
+  model          Model    @relation("ModelVersions", fields: [modelId], references: [id], onDelete: Cascade)
+  versionNo      Int
+  scadSource     String
+  paramSchemaJson Json
+  createdById    String
+  createdBy      User     @relation("VersionCreatedBy", fields: [createdById], references: [id])
+  createdAt      DateTime @default(now())
+
+  currentForModel Model?  @relation("CurrentVersion")
+  renderJobs      RenderJob[]
+  downloads       Download[]
+
+  @@unique([modelId, versionNo])
+}
+
+model PrintableFile {
+  id        String   @id @default(uuid())
+  modelId   String
+  model     Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  fileUrl   String
+  filename  String
+  sizeBytes Int
+  createdAt DateTime @default(now())
+}
+
+model Favorite {
+  userId    String
+  modelId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model     Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, modelId])
+}
+
+model RenderJob {
+  id             String        @id @default(uuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  modelId        String
+  model          Model         @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  modelVersionId String
+  modelVersion   ModelVersion  @relation(fields: [modelVersionId], references: [id], onDelete: Cascade)
+  purpose        RenderPurpose
+  format         String        @default("stl")
+  paramsJson     Json
+  status         RenderStatus  @default(QUEUED)
+  outputUrl      String?
+  error          String?
+  createdAt      DateTime      @default(now())
+  finishedAt     DateTime?
+
+  download       Download?
+
+  @@index([userId, createdAt])
+}
+
+model Download {
+  id             String         @id @default(uuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  modelId        String
+  model          Model          @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  modelVersionId String?
+  modelVersion   ModelVersion?  @relation(fields: [modelVersionId], references: [id])
+  renderJobId    String?        @unique
+  renderJob      RenderJob?     @relation(fields: [renderJobId], references: [id])
+  creditsSpent   Int
+  method         DownloadMethod @default(DOWNLOAD)
+  downloadUrl    String?
+  createdAt      DateTime       @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String
+  actor      User     @relation(fields: [actorId], references: [id])
+  action     String
+  targetType String
+  targetId   String
+  diffJson   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/// Built and reserved per PRD, not wired up to any payment provider yet.
+model Plan {
+  id              String   @id @default(uuid())
+  name            String
+  price           Int
+  creditsPerMonth Int
+  subscriptions   Subscription[]
+}
+
+/// Built and reserved per PRD, not wired up to any payment provider yet.
+model Subscription {
+  id       String @id @default(uuid())
+  userId   String
+  planId   String
+  plan     Plan   @relation(fields: [planId], references: [id])
+  status   String
+}
+
+/// Singleton row (id always "default") holding admin-tunable credit rules.
+model SystemSettings {
+  id                        String @id @default("default")
+  signupBonusCredits        Int    @default(50)
+  defaultDownloadCreditCost Int    @default(1)
+}

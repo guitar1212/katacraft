@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900 antialiased;
+}
+
+/* Slider input styling (used by the number param field) */
+input[type='range'] {
+  @apply h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-brand-600;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+}

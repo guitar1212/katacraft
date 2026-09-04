@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.log
+*.tsbuildinfo
+storage/
+apps/api/storage/**
+!apps/api/storage/.gitkeep
+apps/api/generated/
+apps/api/src/generated/
+.DS_Store
+Thumbs.db

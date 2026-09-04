@@ -1,0 +1,18 @@
+{
+  "groups": [
+    { "key": "text", "label": "文字" },
+    { "key": "size", "label": "尺寸" },
+    { "key": "style", "label": "樣式" }
+  ],
+  "fields": [
+    { "key": "text", "label": "刻字內容", "type": "text", "group": "text", "maxLength": 12, "default": "KataCraft" },
+    { "key": "width", "label": "寬度", "type": "number", "group": "size", "unit": "mm", "min": 20, "max": 120, "step": 1, "default": 60 },
+    { "key": "height", "label": "高度", "type": "number", "group": "size", "unit": "mm", "min": 10, "max": 60, "step": 1, "default": 25 },
+    { "key": "thickness", "label": "厚度", "type": "number", "group": "size", "unit": "mm", "min": 2, "max": 10, "step": 0.5, "default": 4 },
+    { "key": "shape", "label": "外型", "type": "enum", "group": "style", "options": [
+      { "value": "rounded", "label": "圓角" },
+      { "value": "rectangle", "label": "直角" }
+    ], "default": "rounded" },
+    { "key": "hole", "label": "掛孔", "type": "boolean", "group": "style", "default": true }
+  ]
+}

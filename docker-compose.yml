@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: katacraft
+      POSTGRES_PASSWORD: katacraft
+      POSTGRES_DB: katacraft
+    ports:
+      - "5432:5432"
+    volumes:
+      - katacraft_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U katacraft"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:5173}
+      DATABASE_URL: postgresql://katacraft:katacraft@postgres:5432/katacraft?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change-me-dev-secret}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-dev-refresh-secret}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-}
+      OPENSCAD_BIN: openscad
+      STORAGE_DIR: /data/storage
+      SIGNUP_BONUS_CREDITS: ${SIGNUP_BONUS_CREDITS:-50}
+      DEFAULT_DOWNLOAD_CREDIT_COST: ${DEFAULT_DOWNLOAD_CREDIT_COST:-1}
+      # Passed through so main.ts can widen CORS to this Codespace's own
+      # forwarded subdomain — irrelevant/unset outside Codespaces.
+      CODESPACES: ${CODESPACES:-}
+      GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: ${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-}
+    volumes:
+      - katacraft_storage:/data/storage
+    ports:
+      - "3000:3000"
+
+volumes:
+  katacraft_pgdata:
+  katacraft_storage:

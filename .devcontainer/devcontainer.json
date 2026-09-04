@@ -1,0 +1,28 @@
+{
+  "name": "KataCraft",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "forwardPorts": [3000, 5173],
+  "portsAttributes": {
+    "3000": {
+      "label": "API",
+      "visibility": "public",
+      "onAutoForward": "notify"
+    },
+    "5173": {
+      "label": "Web",
+      "visibility": "public",
+      "onAutoForward": "openPreview"
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "postStartCommand": "docker compose up -d",
+  "customizations": {
+    "vscode": {
+      "extensions": ["dbaeumer.vscode-eslint", "prisma.prisma", "bradlc.vscode-tailwindcss"]
+    }
+  },
+  "remoteUser": "node"
+}
